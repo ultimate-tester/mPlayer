@@ -1,7 +1,14 @@
 (function ($) {
     $.fn.mPlayer = function (options) {
         var settings = $.extend({
-            videoUrl: ''
+            videoUrl: '',
+            stripImageUrl: '/images/strips/',
+            stripImageUrlPostfix: '.jpg',
+            stripImagesPerSecond: 1,
+            stripMaxImagesPerRow: 8,
+            stripMaxImagesPerFile: 80,
+            stripImageWidth: 125,
+            stripImageHeight: 70
         }, options);
 
         var $player = $(this);
@@ -16,6 +23,8 @@
         var $playerSeekThumbnail = $playerControls.find('.player-control-seek-thumbnail');
         var $playerControlFullscreen = $playerControls.find('.player-control-fullscreen');
 
+        var matches = settings.videoUrl.match(/(http(s)?:\/\/)?(www\.)?youtu(\.)?be(.+)?v=(.+)/i);
+
         function createYoutubePlayer() {
             $playerVideo = $('<iframe id="player" class="player-video" src="http://www.youtube.com/embed/' + matches[6] + '?enablejsapi=1&amp;autoplay=1&amp;rel=0&amp;controls=0&amp;showinfo=0&amp;disablekb=1&amp;modestbranding=0&amp;iv_load_policy=3" frameborder="0"></iframe>').prependTo($player);
 
@@ -24,6 +33,25 @@
 
             var firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+            $.get('https://crossorigin.me/http://www.youtube.com/get_video_info?video_id=' + matches[6], function (data) {
+                var storyBoardSpecs = decodeURIComponent(data).match(/storyboard_spec=(.*?)&/)[1];
+                var b = storyBoardSpecs.split("|");
+                var base = b[0].split("$")[0] + "2/M";
+                var c = b[3].split("#");
+                var sigh = c[c.length - 1];
+
+                settings.stripImageUrl = base;
+                settings.stripImageUrlPostfix = '.jpg?sigh=' + sigh;
+                settings.stripMaxImagesPerRow = 5;
+                settings.stripMaxImagesPerFile = 25;
+                settings.stripImageWidth = 160;
+                settings.stripImageHeight = 90;
+                settings.stripImagesPerSecond = 0.5;
+
+                $playerSeekThumbnail.width(settings.stripImageWidth);
+                $playerSeekThumbnail.height(settings.stripImageHeight);
+            });
 
             window.onYouTubeIframeAPIReady = function () {
                 var player = new YT.Player('player', {
@@ -48,6 +76,10 @@
                     player.pauseVideo()
                 };
 
+                $playerVideo.isPaused = function () {
+                    return player.getPlayerState() == YT.PlayerState.PAUSED;
+                };
+
                 $playerVideo.mute = function () {
                     player.mute();
 
@@ -60,6 +92,18 @@
 
                     $playerControlUnmute.hide();
                     $playerControlMute.show();
+                };
+
+                $playerVideo.getDuration = function () {
+                    return player.getDuration();
+                };
+
+                $playerVideo.getCurrentTime = function () {
+                    player.getCurrentTime();
+                };
+
+                $playerVideo.setCurrentTime = function (currentTime) {
+                    player.seekTo(currentTime, true);
                 };
             };
         }
@@ -98,7 +142,6 @@
             });
         }
 
-        var matches = settings.videoUrl.match(/(http(s)?:\/\/)?(www\.)?youtu(\.)?be(.+)?v=(.+)/i);
         if (matches != null) {
             createYoutubePlayer();
         } else {
@@ -133,31 +176,31 @@
             }
         });
 
-        $playerControlPlay.click(function (e) {
+        $playerControlPlay.on('click', function (e) {
             e.preventDefault();
             $playerVideo.play();
         });
 
-        $playerControlPause.click(function (e) {
+        $playerControlPause.on('click', function (e) {
             e.preventDefault();
             $playerVideo.pause();
         });
 
-        $playerControlMute.click(function (e) {
+        $playerControlMute.on('click', function (e) {
             e.preventDefault();
             $playerVideo.mute();
         });
 
-        $playerControlUnmute.click(function (e) {
+        $playerControlUnmute.on('click', function (e) {
             e.preventDefault();
             $playerVideo.unmute();
         });
 
-        $playerSeekSlider.mousedown(function () {
+        $playerSeekSlider.on('mousedown', function () {
             var thumbnailPosition = 0;
             var absThumbnailPosition = 0;
-            var pauseState = $playerVideo[0].paused;
-            $playerVideo[0].pause();
+            var pauseState = $playerVideo.isPaused();
+            $playerVideo.pause();
 
             function playerSeekSliderMove(e) {
                 e.preventDefault();
@@ -174,35 +217,34 @@
 
                 $playerSeekThumbnail.css('left', absThumbnailPosition);
 
-                var totalThumbnails = $playerVideo[0].duration;
+                var totalThumbnails = Math.floor($playerVideo.getDuration() * settings.stripImagesPerSecond);
                 var requestedThumbnail = Math.floor(totalThumbnails / ($playerSeekSlider.outerWidth() / thumbnailPosition));
-                var requestedThumbnailFile = Math.floor(requestedThumbnail / 80);
-                var requestedThumbnailRow = Math.floor((requestedThumbnail - (requestedThumbnailFile * 80)) / 8);
-                var requestedThumbnailColumn = requestedThumbnail - (requestedThumbnailRow * 8) - (requestedThumbnailFile * 80);
-                var stripUrl = '/images/strips/' + requestedThumbnailFile + '.jpg';
+                var requestedThumbnailFile = Math.floor(requestedThumbnail / settings.stripMaxImagesPerFile);
+                var requestedThumbnailRow = Math.floor((requestedThumbnail - (requestedThumbnailFile * settings.stripMaxImagesPerFile)) / settings.stripMaxImagesPerRow);
+                var requestedThumbnailColumn = requestedThumbnail - (requestedThumbnailRow * settings.stripMaxImagesPerRow) - (requestedThumbnailFile * settings.stripMaxImagesPerFile);
+                var stripUrl = settings.stripImageUrl + requestedThumbnailFile + settings.stripImageUrlPostfix;
 
                 if ($playerSeekThumbnail.css('background-image') != 'url(\'' + stripUrl + '\')') {
                     $playerSeekThumbnail.css('background-image', 'url(\'' + stripUrl + '\')');
                 }
 
-                $playerSeekThumbnail.css('background-position', -(requestedThumbnailColumn * 125) + 'px' + ' ' + -(requestedThumbnailRow * 70) + 'px');
+                $playerSeekThumbnail.css('background-position', -(requestedThumbnailColumn * settings.stripImageWidth) + 'px' + ' ' + -(requestedThumbnailRow * settings.stripImageHeight) + 'px');
             }
 
             $playerControls.on('mousemove touchmove', playerSeekSliderMove).one('mouseup', function (e) {
                 e.preventDefault();
 
                 $playerControls.off('mousemove touchmove', playerSeekSliderMove);
-
-                $playerVideo[0].currentTime = $playerVideo[0].duration / ($playerSeekSlider.outerWidth() / thumbnailPosition);
+                $playerVideo.setCurrentTime($playerVideo.getDuration() / ($playerSeekSlider.outerWidth() / thumbnailPosition));
 
                 if (pauseState == false) {
-                    $playerVideo[0].play();
+                    $playerVideo.play();
                     pauseState = false;
                 }
             });
         });
 
-        $playerControlFullscreen.click(function (e) {
+        $playerControlFullscreen.on('click', function (e) {
             e.preventDefault();
 
             if (document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement) {
