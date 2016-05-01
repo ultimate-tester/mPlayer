@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="mPlayer.css"/>
+
+    <title>mPlayer Demonstration</title>
+</head>
+<body>
+
+<div id="player-demo" class="player" allowfullscreen>
+    <!--<video id="player-video"></video>-->
+    <!--<iframe sandbox="allow-same-origin allow-scripts allow-popups allow-forms" id="player-video" width="100%"
+            height="100%"
+            src="http://www.youtube.com/embed/5mkm22yO-bs?enablejsapi=1&amp;autoplay=1&amp;rel=0&amp;controls=0&amp;showinfo=0&amp;disablekb=1&amp;modestbranding=0"
+            frameborder="0"></iframe>-->
+
+    <div class="player-focus"></div>
+
+    <div class="player-loading">
+        <img src="/images/loading.gif" alt="..."/>
+    </div>
+
+    <div class="player-controls">
+        <div class="player-controls-right">
+            <a href="javascript://" class="player-control player-control-settings"><i class="fa fa-cog"></i></a>
+            <div class="player-control-settings-entries">
+                <a href="javascript://">Maintain Aspect Ratio</a>
+                <a href="javascript://">Lorem Ipsum</a>
+                <a href="javascript://">Lorem Ipsum</a>
+            </div>
+
+            <a href="javascript://" class="player-control player-control-fullscreen"><i class="fa fa-expand"></i></a>
+        </div>
+
+        <div id="player-controls-left">
+            <a href="javascript://" class="player-control player-control-play"><i class="fa fa-play"></i></a>
+            <a href="javascript://" class="player-control player-control-pause"><i class="fa fa-pause"></i></a>
+
+            <a href="javascript://" class="player-control player-control-volume-mute"><i class="fa fa-volume-up"></i></a>
+            <a href="javascript://" class="player-control player-control-volume-unmute"><i class="fa fa-volume-off"></i></a>
+
+            <div class="player-control player-control-volume-slider">
+                <div class="player-control-volume-level"></div>
+            </div>
+        </div>
+
+        <div class="player-controls-middle">
+            <div class="player-control player-control-seek-slider">
+                <div class="player-control-seek-position"></div>
+                <div class="player-control-seek-thumbnail"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script type="text/javascript" src="mPlayer.js"></script>
+
+<script type="text/javascript">
+    $('#player-demo').mPlayer({videoUrl: 'https://www.youtube.com/watch?v=QAUzWtLMnU0'});
+</script>
+</body>
+</html>
