@@ -18,6 +18,8 @@
         var $playerControlPause = $playerControls.find('.player-control-pause');
         var $playerControlMute = $playerControls.find('.player-control-volume-mute');
         var $playerControlUnmute = $playerControls.find('.player-control-volume-unmute');
+        var $playerVolumeSlider = $playerControls.find('.player-control-volume-slider');
+        var $playerVolumeSliderLevel = $playerControls.find('.player-control-volume-level');
         var $playerSeekSlider = $playerControls.find('.player-control-seek-slider');
         var $playerSeekSliderPosition = $playerControls.find('.player-control-seek-position');
         var $playerSeekThumbnail = $playerControls.find('.player-control-seek-thumbnail');
@@ -93,6 +95,10 @@
                     $playerControlUnmute.hide();
                     $playerControlMute.show();
                 };
+				
+				$playerVideo.setVolume = function(volume) {
+					player.setVolume(volume);
+				};
 
                 $playerVideo.getDuration = function () {
                     return player.getDuration();
@@ -195,8 +201,34 @@
             e.preventDefault();
             $playerVideo.unmute();
         });
+		
+		$playerVolumeSlider.on('mousedown', function(e) {
+			e.preventDefault();
+			
+			function playerVolumeSliderMove(e) {
+				e.preventDefault();
+				
+				var volumePosition = e.pageX - $playerVolumeSlider.offset().left;
+				if(volumePosition < 0) {
+					volumePosition = 0;
+				} else if(volumePosition > $playerVolumeSlider.outerWidth()) {
+					volumePosition = $playerVolumeSlider.outerWidth();
+				}
+				
+				var volumeLevel = 100 / ($playerVolumeSlider.outerWidth() / volumePosition);
+				$playerVolumeSliderLevel.css('width', volumeLevel + '%');
+				$playerVideo.setVolume(volumeLevel);
+			}
+			
+			$playerControls.on('mousemove touchmove', playerVolumeSliderMove).one('mouseup', function (e) {
+                e.preventDefault();
+                $playerControls.off('mousemove touchmove', playerVolumeSliderMove);
+            });
+		});
 
-        $playerSeekSlider.on('mousedown', function () {
+        $playerSeekSlider.on('mousedown', function (e) {
+			e.preventDefault();
+			
             var thumbnailPosition = 0;
             var absThumbnailPosition = 0;
             var pauseState = $playerVideo.isPaused();
